@@ -38,6 +38,29 @@ FishingSession: class FishingSession {
             });
         }
 
+        async fish() {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey
+            };
+            return fetch('http://traoxfish.us-3.evennode.com/fish', {
+                method: 'POST',
+                credentials: "same-origin",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            }).then(response => {
+                return response.json();
+            }).then(json => {
+                if (json.status == "success") {
+                    return json.fish
+                } else {
+                    return -1
+                }
+            });
+        }
+
         async gamble(bet) {
             if(this.loginKey == null) throw new Error('Login key not initialized yet');
 
