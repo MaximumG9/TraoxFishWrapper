@@ -1,3 +1,34 @@
+class GamblingResult {
+    slots = [0,0,0]
+    winnings = 0
+    won = false
+    netWinnings = 0
+
+    constructor(winnings,bet,slot1,slot2,slot3) {
+        if(winnings == -1) {
+            this.slots = null
+            this.winnings = null
+            this.won = null
+            this.netWinnings = null
+            return
+        }
+        
+        if(winnings == 0) {
+            this.netWinnings = -bet
+            this.won = false
+        } else {
+            this.netWinnings = winnings
+            this.won = true
+        }
+
+        this.slots[0] = slot1
+        this.slots[1] = slot2
+        this.slots[2] = slot3
+
+        this.winnings = winnings
+    }
+}
+
 module.exports = {
 FishingSession: class FishingSession {
         randomUUID() {
@@ -26,24 +57,35 @@ FishingSession: class FishingSession {
                 }).then(response => {
                     return response.json();
                 }).then(json => {
+                    var winnings = 0
                     if (json.status == "success") {
-                        return json.winnings;
+                        winnings = json.winnings;
                     } else {
-                        return -1;
+                        winnings = -1;
                     }
+                    return new GamblingResult(winnings,bet,json.slot1,json.slot2,json.slot3);
                 })
         }
 
-        init() {
-            if(this.loginKey == null) throw new Error('Login key not initialized yet');
-            setInterval(this.keepOnline,666);
+        login() {
+            this.getLoginKey(this.username,this.password,this.browserKey).then( ret => {
+                this.loginKey = ret;
+                this.checkIfLoggedIn().then( res => {
+                    console.log("logged in? " + res)
+                    setInterval(() => {
+                        this.keepOnline(this.username,this.loginKey);
+                    },666)
+                    setInterval(() => {
+                        this.checkIfLoggedIn();
+                    },666)
+                });
+            })
         }
         
         constructor(username, password) {
             this.username = username;
             this.password = password;
             this.browserKey = this.randomUUID();
-            this.loginKey = this.getLoginKey(username,password,this.browserKey);
         }
 
         getLoginKey(username, password, browserKey) {
@@ -52,7 +94,7 @@ FishingSession: class FishingSession {
                 "password": password,
                 "browserKey": browserKey
             };
-            return fetch('https://traoxfish.us-3.evennode.com/login', {
+            return fetch('http://traoxfish.us-3.evennode.com/login', {
                 method: 'POST',
                 credentials: "same-origin",
                 headers: {
@@ -70,12 +112,12 @@ FishingSession: class FishingSession {
             });
         }
 
-        keepOnline() {
+        async checkIfLoggedIn() {
             const data = {
-                "username": username,
-                "loginKey": loginKey,
+                "username": this.username,
+                "loginKey": this.loginKey
             };
-            fetch('https://traoxfish.us-3.evennode.com/online', {
+            return await fetch('http://traoxfish.us-3.evennode.com/checkkey', {
                 method: 'POST',
                 credentials: "same-origin",
                 headers: {
@@ -85,8 +127,25 @@ FishingSession: class FishingSession {
             }).then(response => {
                 return response.json();
             }).then(json => {
-        
+                return json.validKey;
             });
+        
+        }
+
+        keepOnline(username,loginKey) {
+            if(loginKey == null) throw new Error('Login key not initialized yet');
+            const data = {
+                "username": username,
+                "loginKey": loginKey,
+            };
+            fetch('http://traoxfish.us-3.evennode.com/online', {
+                method: 'POST',
+                credentials: "same-origin",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
         }
     }
 }
