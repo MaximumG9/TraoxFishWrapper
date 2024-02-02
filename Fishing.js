@@ -8,6 +8,8 @@ FishingSession: class FishingSession {
         }
 
         async gamble(bet) {
+            if(this.loginKey == null) throw new Error('Login key not initialized yet');
+
             const data = {
                 "username": this.username,
                 "loginKey": this.loginKey,
@@ -20,7 +22,7 @@ FishingSession: class FishingSession {
                     headers: {
                         accept: 'application/json',
                     },
-                    body: JSON.stringify(data1),
+                    body: JSON.stringify(data),
                 }).then(response => {
                     return response.json();
                 }).then(json => {
@@ -33,6 +35,7 @@ FishingSession: class FishingSession {
         }
 
         init() {
+            if(this.loginKey == null) throw new Error('Login key not initialized yet');
             setInterval(this.keepOnline,666);
         }
         
@@ -40,7 +43,7 @@ FishingSession: class FishingSession {
             this.username = username;
             this.password = password;
             this.browserKey = this.randomUUID();
-            this.loginKey = getLoginKey(username,password,this.browserKey);
+            this.loginKey = this.getLoginKey(username,password,this.browserKey);
         }
 
         getLoginKey(username, password, browserKey) {
@@ -49,7 +52,7 @@ FishingSession: class FishingSession {
                 "password": password,
                 "browserKey": browserKey
             };
-            fetch('https://traoxfish.us-3.evennode.com/login', {
+            return fetch('https://traoxfish.us-3.evennode.com/login', {
                 method: 'POST',
                 credentials: "same-origin",
                 headers: {
@@ -60,8 +63,9 @@ FishingSession: class FishingSession {
                 return response.json();
             }).then(json => {
                 if (json.status == "success") {
-                    loginKey =  json.key;
+                    return json.key;
                 } else {
+                    return null;
                 }
             });
         }
