@@ -94,7 +94,6 @@ FishingSession: class FishingSession {
             this.getLoginKey(this.username,this.password,this.browserKey).then( ret => {
                 this.loginKey = ret;
                 this.checkIfLoggedIn().then( res => {
-                    console.log("logged in? " + res)
                     setInterval(() => {
                         this.keepOnline(this.username,this.loginKey);
                     },666)
