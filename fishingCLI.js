@@ -21,6 +21,8 @@ autoFishing = false
 
 autoGambling = false
 
+chatMode = false
+
 function addSupressedError(err) {
     if(suppressedErrors.length > 0) {
         suppressedErrors += "\n" + err
@@ -46,6 +48,17 @@ setInterval(() => {
 }, 2000);
 
 setInterval(() => {
+    if(!chatMode) return;
+    session.getChat("public").then(chat => {
+        var ret = ""
+        for(var i = chat.length-1; i >= 0;i--) {
+            ret += chat[i] + "\n"
+        }
+        console.log(ret.substring(0, ret.length-1))
+    })
+}, 1000);
+
+setInterval(() => {
     if(autoFishing) {
         session.fish().then(ret => {
             fishCount = ret
@@ -68,7 +81,28 @@ function input(query) {
 function getNextCommand() {
     input(">> ").then(command => {
         command = String(command)
-        if(!command.startsWith("!")) {getNextCommand(); return}
+
+        if(chatMode) {
+            if(command == "!chat") {
+                chatMode = false
+                console.log("Switched to normal mode");
+            }
+            session.sendChatMessage(command, "public").then( ret => {
+                if(ret) {
+                    console.log(command)
+                } else {
+                    console.log("Message failed to send");
+                }
+                getNextCommand()
+            });
+            return
+        }
+
+        if(!command.startsWith("!")) {
+            getNextCommand();
+            return;
+        }
+
         response = Promise.resolve("Command not recognized")
         switch (command) {
             case "!autoGamble":
@@ -100,22 +134,8 @@ function getNextCommand() {
                 response = session.getProfile(session.username).then(profile => {return profile})
                 break;
             case "!chat":
-                response = session.getChat("public").then(chat => {
-                    var ret = ""
-                    for(var i = chat.length-1; i >= 0;i--) {
-                        ret += chat[i] + "\n"
-                    }
-                    return ret.substring(0, ret.length-1)
-                })
-                break;
-            case "!say":
-                response = input("message: ").then( message => {
-                    if(session.sendChatMessage(message, "public")) {
-                        return "message sent successfully"
-                    } else {
-                        return "message couldn't be sent"
-                    }
-                })
+                chatMode = true;
+                response = Promise.resolve("Switched to chat mode")
                 break;
             case "!errors":
                 if(suppressedErrors.length > 0) {
