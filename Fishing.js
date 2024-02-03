@@ -1,32 +1,14 @@
-class GamblingResult {
-    slots = [0,0,0]
-    winnings = 0
-    won = false
-    netWinnings = 0
-
-    constructor(winnings,bet,slot1,slot2,slot3) {
-        if(winnings == -1) {
-            this.slots = null
-            this.winnings = null
-            this.won = null
-            this.netWinnings = null
-            return
-        }
-        
-        if(winnings == 0) {
-            this.netWinnings = -bet
-            this.won = false
-        } else {
-            this.netWinnings = winnings
-            this.won = true
-        }
-
-        this.slots[0] = slot1
-        this.slots[1] = slot2
-        this.slots[2] = slot3
-
-        this.winnings = winnings
-    }
+function fetchJSON(url,data) {
+    return fetch(url,{
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    }).then(response => {
+        return response.json();
+    })
 }
 
 module.exports = {
@@ -43,22 +25,23 @@ FishingSession: class FishingSession {
                 "username": this.username,
                 "loginKey": this.loginKey
             };
-            return fetch('http://traoxfish.us-3.evennode.com/fish', {
-                method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            }).then(response => {
-                return response.json();
-            }).then(json => {
+            return fetchJSON('http://traoxfish.us-3.evennode.com/fish',data)
+            .then(json => {
                 if (json.status == "success") {
-                    return json.fish
+                    return Number(json.fish)
                 } else {
                     return -1
                 }
             });
+        }
+
+        async getProfile(username) {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey,
+                "profile": username
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getProfile', data).then(json => new Profile(json));
         }
 
         async gamble(bet) {
@@ -70,16 +53,8 @@ FishingSession: class FishingSession {
                 "bet": bet
             };
         
-            return await fetch("http://traoxfish.us-3.evennode.com/gamble", {
-                    method: 'POST',
-                    credentials: "same-origin",
-                    headers: {
-                        accept: 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                }).then(response => {
-                    return response.json();
-                }).then(json => {
+            return await fetchJSON('http://traoxfish.us-3.evennode.com/gamble',data)
+                    .then(json => {
                     var winnings = 0
                     if (json.status == "success") {
                         winnings = json.winnings;
@@ -116,20 +91,11 @@ FishingSession: class FishingSession {
                 "password": password,
                 "browserKey": browserKey
             };
-            return fetch('http://traoxfish.us-3.evennode.com/login', {
-                method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    accept: 'application/json',
-                },
-                body: JSON.stringify(data),
-            }).then(response => {
-                return response.json();
-            }).then(json => {
+            return fetchJSON('http://traoxfish.us-3.evennode.com/login',data).then(json => {
                 if (json.status == "success") {
-                    return json.key;
+                    return String(json.key);
                 } else {
-                    return null;
+                    return String(null);
                 }
             });
         }
@@ -139,17 +105,8 @@ FishingSession: class FishingSession {
                 "username": this.username,
                 "loginKey": this.loginKey
             };
-            return await fetch('http://traoxfish.us-3.evennode.com/checkkey', {
-                method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            }).then(response => {
-                return response.json();
-            }).then(json => {
-                return json.validKey;
+            return fetchJSON('http://traoxfish.us-3.evennode.com/checkKey',data).then(json => {
+                return Boolean(json.validKey);
             });
         
         }
@@ -160,14 +117,98 @@ FishingSession: class FishingSession {
                 "username": username,
                 "loginKey": loginKey,
             };
-            fetch('http://traoxfish.us-3.evennode.com/online', {
-                method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            })
+            fetchJSON('http://traoxfish.us-3.evennode.com/online',data)
         }
+    }
+}
+
+class Profile {
+    guildName = ""
+    isOwnerOfGuild = false
+    fish = 0
+    rareFish = 0
+    veryRareFish = 0
+    sharks = 0
+    rareSharks = 0
+    specialFish = 0
+    fishermen = 0
+    chum = 0
+    fishBuckets = 0
+    fishingBoatFish = 0
+    fishingBoatCapacity = 0
+    level = 0
+    allTimeFish = 0
+    fishGambled = 0
+    joinDate = ""
+    lastOnlineDate = ""
+    profilePicture = ""
+    friendShipStatus = ""
+    rank = ""
+    playtime = ""
+    friendUsernames = [""]
+    challengeSetting = ""
+    fishPerSecond = 0
+    fishPerClick = 0
+
+
+    constructor(json) {
+        this.username = json.username
+
+        this.guildName = json.guild
+        this.isOwnerOfGuild = json.isOwnerOfGuild
+
+        this.level = json.level
+        this.fish = json.fish
+        this.rareFish = json.rareFish
+        this.veryRareFish = json.veryRareFish
+        this.sharks = json.sharks
+        this.rareSharks = json.rareSharks
+        this.specialFish = json.specialFish
+        this.allTimeFish = json.allTimeFish
+        this.fishGambled = json.fishGambled
+        this.joinDate = json.joinDate
+        this.lastOnlineDate = json.lastOnlineDate
+        this.profilePicture = json.profilePicture
+        this.friendShipStatus = json.friendStatus
+        this.rank = json.rank
+        this.fishermen = json.fishermen
+        this.chum = json.chum
+        this.fishBuckets = json.fishBuckets
+        this.playtime = json.playtime
+        this.friendUsernames = json.friends
+        this.challengeSetting = json.challengeSetting
+        this.fishPerSecond = json.fishPerSecond
+        this.fishPerClick = json.fishPerClick
+    }
+}
+
+class GamblingResult {
+    slots = [0,0,0]
+    winnings = 0
+    won = false
+    netWinnings = 0
+
+    constructor(winnings,bet,slot1,slot2,slot3) {
+        if(winnings == -1) {
+            this.slots = null
+            this.winnings = null
+            this.won = null
+            this.netWinnings = null
+            return
+        }
+        
+        if(winnings == 0) {
+            this.netWinnings = -bet
+            this.won = false
+        } else {
+            this.netWinnings = winnings
+            this.won = true
+        }
+
+        this.slots[0] = slot1
+        this.slots[1] = slot2
+        this.slots[2] = slot3
+
+        this.winnings = winnings
     }
 }
