@@ -20,6 +20,29 @@ FishingSession: class FishingSession {
             });
         }
 
+        async getChat(channel) {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey,
+                "channel": channel
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getchat/',data).then(json => {
+                return json.messages;
+            })
+        }
+
+        async sendChatMessage(message,channel) {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey,
+                "channel": channel,
+                "message": message
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/sendchatmessage',data).then(json => {
+                return json.status == "success"
+            })
+        }
+
         async fish() {
             const data = {
                 "username": this.username,

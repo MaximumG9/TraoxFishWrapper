@@ -99,6 +99,24 @@ function getNextCommand() {
             case "!profile":
                 response = session.getProfile(session.username).then(profile => {return profile})
                 break;
+            case "!chat":
+                response = session.getChat("public").then(chat => {
+                    var ret = ""
+                    for(var i = chat.length-1; i >= 0;i--) {
+                        ret += chat[i] + "\n"
+                    }
+                    return ret.substring(0, ret.length-1)
+                })
+                break;
+            case "!say":
+                response = input("message: ").then( message => {
+                    if(session.sendChatMessage(message, "public")) {
+                        return "message sent successfully"
+                    } else {
+                        return "message couldn't be sent"
+                    }
+                })
+                break;
             case "!errors":
                 if(suppressedErrors.length > 0) {
                     response = Promise.resolve("Errors:\n" + suppressedErrors)
