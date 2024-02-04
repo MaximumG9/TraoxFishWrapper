@@ -31,7 +31,7 @@ suppressedErrors = ""
 autoFishing = false
 
 autoGambling = false
-autoGambleAmount = 10000
+autoGambleBet = 10000
 
 chatMode = false
 
@@ -45,7 +45,7 @@ function addSupressedError(err) {
 
 setInterval(() => {
     if(!autoGambling) return
-    session.gamble(autoGambleAmount).then((result) => {
+    session.gamble(autoGambleBet).then((result) => {
 
         result.slots.forEach(element => {
             if(element == "jackpot") {
@@ -110,6 +110,8 @@ function getNextCommand() {
             if(command == "!chat") {
                 chatMode = false
                 console.log("Switched to normal mode");
+                getNextCommand();
+                return
             }
             session.sendChatMessage(command, "public").then( ret => {
                 if(ret) {
@@ -128,14 +130,7 @@ function getNextCommand() {
         }
 
         var response = Promise.resolve("Command not recognized")
-        if(command.startsWith("!autoGamble")) {
-            autoGambling = !autoGambling;
-                if(autoGambling) {
-                    response = Promise.resolve("Auto Gambling Activated")
-                } else {
-                    response = Promise.resolve("Auto Gambling Disabled");
-                }
-        } else if(command.startsWith("!autoGambleInfo")) {
+        if(command.startsWith("!autoGambleInfo")) {
                 response = Promise.resolve("Jackpot slots out of # of slots rolled: " + jackpotslotcount + "/" + betcount*3 + "\n"
                 + "2Xs:   " + twoTimesCount + "\n"
                 + "5Xs:   " + fiveTimesCount + "\n"
@@ -144,22 +139,50 @@ function getNextCommand() {
                 + "1000Xs:" + thousandTimesCount + "\n"
                 + "# of gambles: " + betcount + "\n"
                 + "net winnings: " + netWinnings);
+        } else if(command.startsWith("!autoGambleBet")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var bet = ""
+                cmd.forEach(string => {
+                    if(!string.startsWith("!autoGambleBet")) bet += string
+                })
+                autoGambleBet = parseInt(bet)
+                response = Promise.resolve("Auto gamble is now " + autoGambleBet)
+            } else {
+                response = Promise.resolve("Auto gamble bet is currently " + autoGambleBet)
+            }
+        } else if(command.startsWith("!autoGamble")) {
+            autoGambling = !autoGambling;
+                if(autoGambling) {
+                    response = Promise.resolve("Auto Gambling Activated")
+                } else {
+                    response = Promise.resolve("Auto Gambling Disabled");
+                }
         } else if(command.startsWith("!gamble")) {
-            const cmd = String(command)
             var bet = ""
-            cmd.split(" ").forEach(string => {
+            command.split(" ").forEach(string => {
                 if(!string.startsWith("!gamble")) bet += string
             })
             const gamble = session.gamble(parseInt(bet))
             response = gamble.then( result => {
-                if(result.slots == null) return "That's too many fish (or gambling is on cooldown)"
+                if(result.slots == null) return "You can't bet that amount (or gambling is on cooldown)"
                 return result.slots + "\nWon: " + result.winnings
             })
             gamble.catch( err => {
                 addSupressedError(err)
             })
         } else if(command.startsWith("!profile")) {
-            response = session.getProfile(session.username).then(profile => {return profile})
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var username = ""
+                cmd.forEach(string => {
+                    if(!string.startsWith("!profile")) username += string
+                })
+                autoGambleBet = parseInt(username)
+                response = session.getProfile(username).then(profile => {return profile})
+            } else {
+                response = session.getProfile(session.username).then(profile => {return profile})
+            }
         } else if(command.startsWith("!chat")) {
             chatMode = true;
             response = Promise.resolve("Switched to chat mode")
