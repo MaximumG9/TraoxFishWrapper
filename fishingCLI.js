@@ -12,8 +12,14 @@ try {
     addSupressedError(err)
 }
 
-
 jackpotslotcount = 0
+
+twoTimesCount = 0
+fiveTimesCount = 0
+twentyFiveTimesCount = 0
+hundredTimesCount = 0
+thousandTimesCount = 0
+
 betcount = 0
 
 netWinnings = 0
@@ -39,12 +45,24 @@ function addSupressedError(err) {
 setInterval(() => {
     if(!autoGambling) return
     session.gamble(1000).then((result) => {
-        if(result)
+
         result.slots.forEach(element => {
             if(element == "jackpot") {
                 jackpotslotcount++;
             }
         });
+        if(JSON.stringify(result.slots) == "[2,2,2]") {
+            twoTimesCount++;
+        } else if(JSON.stringify(result.slots) == "[5,5,5]") {
+            fiveTimesCount++;
+        } else if(JSON.stringify(result.slots) == "[25,25,25]") {
+            twentyFiveTimesCount++;
+        } else if(JSON.stringify(result.slots) == "[100,100,100]") {
+            hundredTimesCount++;
+        } else if(JSON.stringify(result.slots) == "[1000,1000,1000]") {
+            thousandTimesCount++;
+        }
+        
         netWinnings += result.netWinnings
         betcount++;
     }).catch((err) => {
@@ -120,6 +138,11 @@ function getNextCommand() {
                 break;
             case "!autoGambleInfo":
                 response = Promise.resolve("Jackpot slots out of # of slots rolled: " + jackpotslotcount + "/" + betcount*3 + "\n"
+                + "2Xs:   " + twoTimesCount + "\n"
+                + "5Xs:   " + fiveTimesCount + "\n"
+                + "25Xs:  " + twentyFiveTimesCount + "\n"
+                + "100Xs: " + hundredTimesCount + "\n"
+                + "1000Xs:" + thousandTimesCount + "\n"
                 + "# of gambles: " + betcount + "\n"
                 + "net winnings: " + netWinnings);
                 break;
