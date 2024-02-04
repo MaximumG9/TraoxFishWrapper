@@ -6,7 +6,12 @@ const session = new Fishing.FishingSession(process.env.TRAOX_FISH_GAME_USERNAME,
 console.log(process.env.TRAOX_FISH_GAME_USERNAME)
 console.log(process.env.TRAOX_FISH_GAME_PASSWORD)
 
-session.login()
+try {
+    session.login()
+} catch (err) {
+    addSupressedError(err)
+}
+
 
 jackpotslotcount = 0
 betcount = 0
@@ -55,14 +60,14 @@ setInterval(() => {
             ret += chat[i] + "\n"
         }
         console.log(ret.substring(0, ret.length-1))
-    })
+    }).catch( err => addSupressedError(err) )
 }, 1000);
 
 setInterval(() => {
     if(autoFishing) {
         session.fish().then(ret => {
             fishCount = ret
-        })
+        }).catch( err => addSupressedError(err) )
     }
 }, 300);
 
