@@ -31,6 +31,7 @@ suppressedErrors = ""
 autoFishing = false
 
 autoGambling = false
+autoGambleAmount = 10000
 
 chatMode = false
 
@@ -44,7 +45,7 @@ function addSupressedError(err) {
 
 setInterval(() => {
     if(!autoGambling) return
-    session.gamble(1000).then((result) => {
+    session.gamble(autoGambleAmount).then((result) => {
 
         result.slots.forEach(element => {
             if(element == "jackpot") {
@@ -126,17 +127,15 @@ function getNextCommand() {
             return;
         }
 
-        response = Promise.resolve("Command not recognized")
-        switch (command) {
-            case "!autoGamble":
-                autoGambling = !autoGambling;
+        var response = Promise.resolve("Command not recognized")
+        if(command.startsWith("!autoGamble")) {
+            autoGambling = !autoGambling;
                 if(autoGambling) {
                     response = Promise.resolve("Auto Gambling Activated")
                 } else {
                     response = Promise.resolve("Auto Gambling Disabled");
                 }
-                break;
-            case "!autoGambleInfo":
+        } else if(command.startsWith("!autoGambleInfo")) {
                 response = Promise.resolve("Jackpot slots out of # of slots rolled: " + jackpotslotcount + "/" + betcount*3 + "\n"
                 + "2Xs:   " + twoTimesCount + "\n"
                 + "5Xs:   " + fiveTimesCount + "\n"
@@ -145,47 +144,41 @@ function getNextCommand() {
                 + "1000Xs:" + thousandTimesCount + "\n"
                 + "# of gambles: " + betcount + "\n"
                 + "net winnings: " + netWinnings);
-                break;
-            case "!gamble":
-                const gamble = input("bet: ").then( bet => {
-                    return session.gamble(parseInt(bet))
-                })
-                response = gamble.then( result => {
-                    if(result.slots == null) return "That's too many fish (or gambling is on cooldown)"
-                    return result.slots + "\nWon: " + result.winnings
-                })
-                gamble.catch( err => {
-                    addSupressedError(err)
-                })
-                break;
-            case "!profile":
-                response = session.getProfile(session.username).then(profile => {return profile})
-                break;
-            case "!chat":
-                chatMode = true;
-                response = Promise.resolve("Switched to chat mode")
-                break;
-            case "!errors":
-                if(suppressedErrors.length > 0) {
-                    response = Promise.resolve("Errors:\n" + suppressedErrors)
-                    suppressedErrors = ""
-                } else {
-                    response = Promise.resolve("No errors")
-                }
-                break;
-            case "!autoFish":
-                autoFishing = !autoFishing;
-                if(autoFishing) {
-                    response = Promise.resolve("Auto Fishing Activated")
-                } else {
-                    response = Promise.resolve("Auto Fishing Disabled");
-                }
-                break;
-            case "!exit":
-                process.exit(0);
-                break;
-            default:
-                break;
+        } else if(command.startsWith("!gamble")) {
+            const cmd = String(command)
+            var bet = ""
+            cmd.split(" ").forEach(string => {
+                if(!string.startsWith("!gamble")) bet += string
+            })
+            const gamble = session.gamble(parseInt(bet))
+            response = gamble.then( result => {
+                if(result.slots == null) return "That's too many fish (or gambling is on cooldown)"
+                return result.slots + "\nWon: " + result.winnings
+            })
+            gamble.catch( err => {
+                addSupressedError(err)
+            })
+        } else if(command.startsWith("!profile")) {
+            response = session.getProfile(session.username).then(profile => {return profile})
+        } else if(command.startsWith("!chat")) {
+            chatMode = true;
+            response = Promise.resolve("Switched to chat mode")
+        } else if(command.startsWith("!errors")) {
+            if(suppressedErrors.length > 0) {
+                response = Promise.resolve("Errors:\n" + suppressedErrors)
+                suppressedErrors = ""
+            } else {
+                response = Promise.resolve("No errors")
+            }
+        } else if(command.startsWith("!autoFish")) {
+            autoFishing = !autoFishing;
+            if(autoFishing) {
+                response = Promise.resolve("Auto Fishing Activated")
+            } else {
+                response = Promise.resolve("Auto Fishing Disabled");
+            }
+        } else if(command.startsWith("!exit")) {
+            process.exit(0);
         }
         response.then( message => {
             console.log(message);
