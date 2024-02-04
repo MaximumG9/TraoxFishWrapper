@@ -31,6 +31,40 @@ FishingSession: class FishingSession {
             })
         }
 
+        async sendFriendRequest(username) {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey,
+                "profile": username,
+                "cancel": false
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/sendfriendrequest',data).then(json => {
+                return json.status == "success"
+            })
+        }
+
+        async getFriends() {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getfriends',data).then(json => {
+                return new FriendListResult(json)
+            })
+        }
+
+        async unFriend(username) {
+            const data = {
+                "username": this.username,
+                "loginKey": this.loginKey,
+                "profile": username,
+                "cancel": true
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/sendfriendrequest',data).then(json => {
+                return json.status == "success"
+            })
+        }
+
         async sendChatMessage(message,channel) {
             const data = {
                 "username": this.username,
@@ -202,6 +236,18 @@ class Profile {
         this.challengeSetting = json.challengeSetting
         this.fishPerSecond = json.fishPerSecond
         this.fishPerClick = json.fishPerClick
+    }
+}
+
+class FriendListResult {
+    friendUsernames = [""]
+    outgoingRequestUsernames = [""]
+    incomingRequestUsernames = [""]
+
+    constructor(json) {
+        this.friendUsernames = json.friends     
+        this.outgoingRequestUsernames = json.outgoingRequests
+        this.incomingRequestUsernames = json.incomingRequests
     }
 }
 

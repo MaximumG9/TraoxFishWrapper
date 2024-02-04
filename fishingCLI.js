@@ -106,25 +106,7 @@ function getNextCommand() {
     input(">> ").then(command => {
         command = String(command)
 
-        if(chatMode) {
-            if(command == "!chat") {
-                chatMode = false
-                console.log("Switched to normal mode");
-                getNextCommand();
-                return
-            }
-            session.sendChatMessage(command, "public").then( ret => {
-                if(ret) {
-                    console.log(command)
-                } else {
-                    console.log("Message failed to send");
-                }
-                getNextCommand()
-            });
-            return
-        }
-
-        if(!command.startsWith("!")) {
+        if(!(command.startsWith("!") || chatMode)) {
             getNextCommand();
             return;
         }
@@ -178,14 +160,57 @@ function getNextCommand() {
                 cmd.forEach(string => {
                     if(!string.startsWith("!profile")) username += string
                 })
-                autoGambleBet = parseInt(username)
                 response = session.getProfile(username).then(profile => {return profile})
             } else {
                 response = session.getProfile(session.username).then(profile => {return profile})
             }
+        } else if(command.startsWith("!unfriend")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var username = ""
+                cmd.forEach(string => {
+                    if(!string.startsWith("!unfriend")) username += string
+                })
+                response = session.getProfile(username).then(profile => {
+                    session.unFriend(username).then( ret => {
+                        if(ret) {
+                            return "successfully unfriended " + username
+                        } else {
+                            return "failed to unfriend " + username
+                        }
+                    });
+                });
+                
+            } else {
+                response = Promise.resolve("Name someone to unfriend")
+            }
+        } else if(command.startsWith("!friend")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var username = ""
+                cmd.forEach(string => {
+                    if(!string.startsWith("!friend")) username += string
+                })
+                response = session.sendFriendRequest(username).then( ret => {
+                    if(ret) {
+                        return "successfully friended " + username
+                    } else {
+                        return "failed to friend " + username
+                    }
+                });
+            } else {
+                response = session.getFriends().then(friends => {
+                    return renderFriendList(friends);
+                });
+            }
         } else if(command.startsWith("!chat")) {
-            chatMode = true;
-            response = Promise.resolve("Switched to chat mode")
+            chatMode = !chatMode;
+            if(chatMode) {
+                response = Promise.resolve("Switched to chat mode")
+            } else {
+                response = Promise.resolve("Switched to normal mode")
+            }
+            
         } else if(command.startsWith("!errors")) {
             if(suppressedErrors.length > 0) {
                 response = Promise.resolve("Errors:\n" + suppressedErrors)
@@ -202,6 +227,14 @@ function getNextCommand() {
             }
         } else if(command.startsWith("!exit")) {
             process.exit(0);
+        } else if(chatMode) {
+            response = session.sendChatMessage(command, "public").then( ret => {
+                if(ret) {
+                    return command
+                } else {
+                    return "Message failed to send";
+                }
+            });
         }
         response.then( message => {
             console.log(message);
@@ -213,3 +246,67 @@ function getNextCommand() {
 getNextCommand();
 
 
+function renderFriendList(friends) {
+    if(friends.friendUsernames == null || friends.incomingRequestUsernames.length == null || friends.outgoingRequestUsernames == null) return "problem while fetching friends"
+    var height = 0
+
+    if(friends.friendUsernames.length >= friends.incomingRequestUsernames.length &&
+        friends.friendUsernames.length >= friends.outgoingRequestUsernames.length) {
+        height = friends.friendUsernames.length
+    } else if(friends.incomingRequestUsernames.length >= friends.friendUsernames.length &&
+        friends.incomingRequestUsernames.length >= friends.outgoingRequestUsernames.length) {
+        height = friends.incomingRequestUsernames.length
+    } else if(friends.outgoingRequestUsernames.length >= friends.friendUsernames.length &&
+        friends.outgoingRequestUsernames.length >= friends.incomingRequestUsernames.length) {
+        height = friends.outgoingRequestUsernames.length
+    }
+
+    var maxFriendUsernameLength = 7
+    var maxOutgoingRequestUsernameLength = 2
+    var maxIncomingRequestUsernameLength = 3
+
+    friends.friendUsernames.forEach( elem => {
+        if (elem.length > maxFriendUsernameLength) {
+            maxFriendUsernameLength = elem.length
+        }
+    })
+
+    friends.outgoingRequestUsernames.forEach( elem => {
+        if (elem.length > maxOutgoingRequestUsernameLength) {
+            maxOutgoingRequestUsernameLength = elem.length
+        }
+    })
+
+    friends.incomingRequestUsernames.forEach( elem => {
+        if (elem.length > maxIncomingRequestUsernameLength) {
+            maxIncomingRequestUsernameLength = elem.length
+        }
+    })
+
+    var resp = `| ${"friends".padEnd(maxFriendUsernameLength," ")} | ${"in".padEnd(maxIncomingRequestUsernameLength," ")} | ${"out".padEnd(maxOutgoingRequestUsernameLength," ")} |\n`
+    
+    for (let i = 0; i < height; i++) {
+        var line = "| "
+
+        if(i < friends.friendUsernames.length) {
+            line += friends.friendUsernames[i].padEnd(maxFriendUsernameLength, " ");
+        } else {line += "".padEnd(maxFriendUsernameLength," ");}
+
+        line += " | "
+
+        if(i < friends.incomingRequestUsernames.length) {
+            line += friends.incomingRequestUsernames[i].padEnd(maxIncomingRequestUsernameLength," ");
+        } else {line += "".padEnd(maxIncomingRequestUsernameLength," ");}
+
+        line += " | "
+
+        if(i < friends.outgoingRequestUsernames.length) {
+            line += friends.outgoingRequestUsernames[i].padEnd(maxOutgoingRequestUsernameLength," ");
+        } else {line += "".padEnd(maxOutgoingRequestUsernameLength," ");}
+
+        line += " |\n"
+
+        resp += line
+    }
+    return resp
+}
