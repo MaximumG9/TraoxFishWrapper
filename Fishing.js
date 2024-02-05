@@ -7,8 +7,13 @@ function fetchJSON(url,data) {
         },
         body: JSON.stringify(data),
     }).then(response => {
-        return response.json();
-    })
+        try {
+            var json = response.json();
+        } catch (err) {
+            var json = {};
+        }
+        return json;
+    });
 }
 
 module.exports = {

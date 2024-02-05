@@ -12,6 +12,8 @@ try {
     addSupressedError(err)
 }
 
+var inputRL = null
+
 jackpotslotcount = 0
 
 twoTimesCount = 0
@@ -79,6 +81,7 @@ setInterval(() => {
             ret += chat[i] + "\n"
         }
         console.log(ret.substring(0, ret.length-1))
+        process.stdout.write(">> " + inputrl.line);
     }).catch( err => addSupressedError(err) )
 }, 1000);
 
@@ -91,13 +94,13 @@ setInterval(() => {
 }, 300);
 
 function input(query) {
-    const rl = readline.createInterface({
+    inputrl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
     });
 
-    return new Promise(resolve => rl.question(query, ans => {
-        rl.close();
+    return new Promise(resolve => inputrl.question(query, ans => {
+        inputrl.close();
         resolve(ans);
     }))
 }
@@ -120,6 +123,7 @@ function getNextCommand() {
                 + "100Xs: " + hundredTimesCount + "\n"
                 + "1000Xs:" + thousandTimesCount + "\n"
                 + "# of gambles: " + betcount + "\n"
+                + "time spent betting: " + betcount*2 + "s\n"
                 + "net winnings: " + netWinnings);
         } else if(command.startsWith("!autoGambleBet")) {
             const cmd = command.split(" ")
