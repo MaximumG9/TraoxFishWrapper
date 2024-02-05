@@ -11,7 +11,7 @@ console.log(session.loginKey)
 try {
     session.login()
 } catch (err) {
-    addSupressedError(err)
+    addSuppressedError(err)
 }
 
 var inputRL = null
@@ -37,12 +37,13 @@ autoGambleBet = 10000
 
 chatMode = false
 
-function addSupressedError(err) {
+function addSuppressedError(err) {
     if(suppressedErrors.length > 0) {
         suppressedErrors += "\n" + err
     } else {
         suppressedErrors = err.toString()
     }
+    console.log("suppressed an error")
 }
 
 setInterval(() => {
@@ -69,7 +70,7 @@ setInterval(() => {
         netWinnings += result.netWinnings
         betcount++;
     }).catch((err) => {
-        addSupressedError(err)
+        addSuppressedError(err)
     });
 }, 2000);
 
@@ -82,14 +83,14 @@ setInterval(() => {
         }
         console.log(ret.substring(0, ret.length-1))
         process.stdout.write(">> " + inputrl.line);
-    }).catch( err => addSupressedError(err) )
+    }).catch( err => addSuppressedError(err) )
 }, 1000);
 
 setInterval(() => {
     if(autoFishing) {
         session.fish().then(ret => {
             fishCount = ret
-        }).catch( err => addSupressedError(err) )
+        }).catch( err => addSuppressedError(err) )
     }
 }, 300);
 
@@ -155,7 +156,7 @@ function getNextCommand() {
                 return result.slots + "\nWon: " + result.winnings
             })
             gamble.catch( err => {
-                addSupressedError(err)
+                addSuppressedError(err)
             })
         } else if(command.startsWith("!profile")) {
             const cmd = command.split(" ")
