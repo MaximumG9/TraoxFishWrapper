@@ -1,10 +1,12 @@
 const Fishing = require('./Fishing');
 const readline = require('readline');
 
+suppressedErrors = ""
+
 const session = new Fishing.FishingSession(process.env.TRAOX_FISH_GAME_USERNAME,process.env.TRAOX_FISH_GAME_PASSWORD);
 
 console.log(process.env.TRAOX_FISH_GAME_USERNAME)
-console.log(process.env.TRAOX_FISH_GAME_PASSWORD)
+console.log(session.loginKey)
 
 try {
     session.login()
@@ -27,8 +29,6 @@ betcount = 0
 netWinnings = 0
 
 fishCount = 0
-
-suppressedErrors = ""
 
 autoFishing = false
 

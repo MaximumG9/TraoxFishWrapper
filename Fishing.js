@@ -1,19 +1,20 @@
 function fetchJSON(url,data) {
-    return fetch(url,{
-        method: 'POST',
-        credentials: "same-origin",
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    }).then(response => {
-        try {
-            var json = response.json();
-        } catch (err) {
-            var json = {};
-        }
-        return json;
-    });
+    var json;
+    try {
+        json = fetch(url,{
+            method: 'POST',
+            credentials: "same-origin",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        }).then(response => {
+            return response.json();
+        });
+    } catch (e) {
+        json = Promise.resolve({});
+    }
+    return json;
 }
 
 module.exports = {
