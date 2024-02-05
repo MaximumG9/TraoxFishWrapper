@@ -172,13 +172,13 @@ function getNextCommand() {
                     if(!string.startsWith("!unfriend")) username += string
                 })
                 response = session.getProfile(username).then(profile => {
-                    session.unFriend(username).then( ret => {
-                        if(ret) {
-                            return "successfully unfriended " + username
-                        } else {
-                            return "failed to unfriend " + username
-                        }
-                    });
+                    return session.unFriend(username)
+                }).then( ret => {
+                    if(ret) {
+                        return "successfully unfriended " + username
+                    } else {
+                        return "failed to unfriend " + username
+                    }
                 });
                 
             } else {
