@@ -17,7 +17,22 @@ function fetchJSON(url,data) {
     return json;
 }
 
+
 module.exports = {
+createAccount: function createAccount(username, password) {
+    const data = {
+        "username": username,
+        "password": password,
+        "browserKey": getCookie("browserKey")
+    };
+    return fetchJSON(`https://traoxfish.us-3.evennode.com/register`).then( json => {
+        if(json.status == "success") {
+            return true;
+        } else {
+            return false;
+        }
+    });
+},
 FishingSession: class FishingSession {
         randomUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
