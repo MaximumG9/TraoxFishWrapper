@@ -9,7 +9,10 @@ function fetchJSON(url,data) {
             },
             body: JSON.stringify(data),
         }).then(response => {
-            return response.json();
+            return response.text().then((text) => {
+                //console.log(text);
+                return JSON.parse(text);
+            });
         });
     } catch (e) {
         json = Promise.resolve({});
@@ -39,6 +42,87 @@ FishingSession: class FishingSession {
                 var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
                 return v.toString(16);
             });
+        }
+
+        async buy(name,amount) {
+            const data = {
+                "username":this.username,
+                "loginKey":this.loginKey,
+                "purchaseType":name,
+                "quantity":amount
+            };
+
+            return fetchJSON('http://traoxfish.us-3.evennode.com/makepurchase', data).then(json => {
+                return json.status == "success";
+            })
+        }
+
+        async getCosts() {
+            const data = {
+                "username":this.username,
+                "loginKey":this.loginKey,
+                "rareFishAmount":1,
+                "veryRareFishAmount":1,
+                "sharkAmount":1,
+                "rareSharkAmount":1,
+                "fishermanAmount":1,
+                "chumAmount":1,
+                "fishBucketAmount":1
+            }
+
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getcosts',data).then(json => {
+                const thing = new Costs(json);
+                return thing;
+            })
+        }
+
+        async getData() {
+            const data = {
+                "username":this.username,
+                "loginKey":this.loginKey
+            };
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getdata',data);
+        }
+
+        async getSpecialFishData() {
+            const data = {
+                "username":this.username,
+                "loginKey":this.loginKey
+            };
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getspecialfishgraph',data).then(json => {
+                return json.graph;
+            });
+        }
+
+        async buySpecialFish(amount) {
+            const data = {
+                "username":this.username,
+                "loginKey":this.loginKey,
+                "purchaseType":"specialFish",
+                "quantity":amount
+            };
+
+            for(var i=0;i<amount;i++) {
+                fetchJSON('http://traoxfish.us-3.evennode.com/makepurchase', data).then(json => {
+                    return json.status == "success";
+                })
+            }
+        }
+
+        async getLeaderboard(type) {
+            const data = {
+                "leaderboardType": type,
+                "loginKey": this.loginKey,
+                "username": this.username
+            }
+            return fetchJSON('http://traoxfish.us-3.evennode.com/getleaderboards', data).then(json => {
+                for (let index = 0; index < json.leaderboards.length; index++) {
+                    if(json.onlineStatus[index]) {
+                        json.leaderboards[index] = json.leaderboards[index] + " (Online)"
+                    }  
+                }
+                return json.leaderboards
+            })
         }
 
         async getChat(channel) {
@@ -257,6 +341,32 @@ class Profile {
         this.challengeSetting = json.challengeSetting
         this.fishPerSecond = json.fishPerSecond
         this.fishPerClick = json.fishPerClick
+    }
+}
+
+class Costs {
+    rareFishCost = 0;
+    veryRareFishCost = 0;
+    sharkCost = 0;
+    rareSharkCost = 0;
+    specialFishCost = 0;
+    specialFishSellCost = 0;
+    whaleCost = 0;
+    fishermanCost = 0;
+    chumCost = 0;
+    fishBucketCost = 0;
+
+
+    constructor(json) {
+        this.rareFishCost = json.rareFishCost;
+        this.veryRareFishCost = json.veryRareFishCost
+        this.sharkCost = json.sharkCost;
+        this.rareSharkCost = json.rareSharkCost;
+        this.specialFishCost = json.specialFishCost;
+        this.whaleCost = json.whaleCost;
+        this.fishermanCost = json.fishermanCost;
+        this.chumCost = json.chumCost;
+        this.fishBucketCost = json.fishBucketCost;
     }
 }
 

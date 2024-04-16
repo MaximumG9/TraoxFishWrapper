@@ -33,7 +33,8 @@ fishCount = 0
 autoFishing = false
 
 autoGambling = false
-autoGambleBet = 10000
+autoGambleBet = 1
+gamblingMinForJackpot = false
 
 chatMode = false
 
@@ -47,14 +48,31 @@ function addSuppressedError(err) {
 }
 
 setInterval(() => {
-    if(!autoGambling) return
+    if(!autoGambling) return;
+
+
+    if(gamblingMinForJackpot) {
+        session.getData().then(data => {
+            const bet = Math.ceil(data.minimumBidForJackpot*1.1); // Add extra amount to bet
+            autoGambleBet = bet;
+        });
+    }
+
     session.gamble(autoGambleBet).then((result) => {
 
+        var jackpotsThisSpin = 0
         result.slots.forEach(element => {
             if(element == "jackpot") {
-                jackpotslotcount++;
+                jackpotsThisSpin++;
             }
         });
+
+        if(jackpotsThisSpin == 3) {
+            console.log("WON THE JACKPOT!!!!");
+        }
+
+        jackpotslotcount += jackpotsThisSpin;
+
         if(JSON.stringify(result.slots) == "[2,2,2]") {
             twoTimesCount++;
         } else if(JSON.stringify(result.slots) == "[5,5,5]") {
@@ -138,6 +156,40 @@ function getNextCommand() {
             } else {
                 response = Promise.resolve("Auto gamble bet is currently " + autoGambleBet)
             }
+        } else if(command.startsWith("!gambleMinForJackpot")) {
+            gamblingMinForJackpot = !gamblingMinForJackpot
+            if(gamblingMinForJackpot) {
+                response = Promise.resolve("Jackpot Gambling Activated")
+            } else {
+                response = Promise.resolve("Jackpot Gambling Disabled");
+            }
+        } else if(command.startsWith("!shop")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var name = cmd[1];
+                var amount;
+                if(cmd[2] != null) {
+                    amount = cmd[2];
+                } else {
+                    amount = 1;
+                }
+                
+                response = session.buy(name, amount).then(result => {
+                    if(result) { 
+                        return "Successfully bought " + amount + " " + name;
+                    } else {
+                        return "Wasn't able to buy that"
+                    }
+                });
+            } else {
+                response = session.getCosts();
+            }
+        } else if(command.startsWith("!getData")) {
+            response = session.getData();
+        } else if(command.startsWith("!fish")) {
+            response = session.getData().then(data => {
+                return data.fish;
+            });
         } else if(command.startsWith("!autoGamble")) {
             autoGambling = !autoGambling;
                 if(autoGambling) {
@@ -158,6 +210,50 @@ function getNextCommand() {
             gamble.catch( err => {
                 addSuppressedError(err)
             })
+        } else if(command.startsWith("!leaderboard")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                response = session.getLeaderboard(cmd.slice(1).join()).then((leaderboard) => {
+                    var text = ""
+                    for (let i = 0; i < 50; i++) {
+                        const string = leaderboard[i];
+                        text += i + ". " + string + "\n"
+                    }
+                    leaderboard.forEach((string) => {
+                        
+                    })
+                    return text
+                })
+            } else {
+                response = session.getLeaderboard("fish").then((leaderboard) => {
+                    var text = ""
+                    for (let i = 0; i < 50; i++) {
+                        const string = leaderboard[i];
+                        text += i + ". " + string + "\n"
+                    }
+                    leaderboard.forEach((string) => {
+                        
+                    })
+                    return text
+                })
+            }
+            
+        } else if(command.startsWith("!specialFish")) {
+            const cmd = command.split(" ")
+            if(cmd.length > 1) {
+                var amount = "";
+                cmd.forEach(string => {
+                    if(!string.startsWith("!specialFish")) amount += string;
+                });
+                response = session.buySpecialFish(amount).then(result => {
+                    return result ? "Bought " + amount + " special fish" : "Failed to buy that amount of Special Fish";
+                });
+            } else {
+                response = session.getCosts().then((data) => {
+                    return "Buy Price: " + data.specialFishCost + "\n" +
+                            "Sell Price: " + data.specialFishSellCost;
+                });
+            }
         } else if(command.startsWith("!profile")) {
             const cmd = command.split(" ")
             if(cmd.length > 1) {
